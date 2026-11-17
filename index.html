@@ -534,8 +534,8 @@ body.started #start{display:none}
    real GitHub username (keep the quotes). Nothing else here.
    ============================================================ */
 /* One file for BOTH screens. Any web address containing a word in OFFICE_WORDS is the office slideshow site. */
-const OFFICE_WORDS = ['iwadmin', 'iwcampus2'];
-const IS_CAMPUS2 = location.hostname.indexOf('iwcampus2') > -1 || /[?&]screen=campus2/.test(location.search); /* Campus 2 site: own data, own timetable */
+const OFFICE_WORDS = ['iwadmin', 'iwcampus2', 'iota2'];
+const IS_CAMPUS2 = (location.hostname.indexOf('iwcampus2') > -1 || location.hostname.indexOf('iota2') > -1) || /[?&]screen=campus2/.test(location.search); /* Campus 2 site: own data, own timetable */
 const IS_OFFICE_SITE = OFFICE_WORDS.some(w => location.hostname.indexOf(w) > -1) || /[?&]screen=(office|campus2)/.test(location.search);
 const SYNC = { owner: 'muhammmadrayyaan-sudo', repo: IS_CAMPUS2 ? 'Iota-signage-campus-2' : IS_OFFICE_SITE ? 'iota-signage-office' : 'iota-signage', branch: 'data', file: 'signage-data.json' };
 const SLIDES_ONLY = IS_OFFICE_SITE;
