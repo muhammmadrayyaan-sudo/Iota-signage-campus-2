@@ -271,6 +271,7 @@ body.started #start{display:none}
 @keyframes actGlow{0%,100%{box-shadow:0 0 0 0 rgba(196,0,0,0)}50%{box-shadow:0 0 2.4vh .6vh rgba(196,0,0,.8)}}
 .card.act.now{outline:.5vh solid #ffd400;outline-offset:.1vh}
 .card.act.past{animation:none;opacity:.38;box-shadow:none;will-change:auto}
+.webslide{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
 </style>
 </head>
 <body>
@@ -1239,6 +1240,7 @@ function buildSlides() {
   const FX = ['curtain', 'zoom', 'zoomout', 'slide', 'left', 'up', 'down', 'wipe', 'flip', 'fade'];
   if (S.videoOn) (S.videos || []).filter(v => v.on).forEach((v, i) => {
     const pick = v.fx || S.slideFx || 'curtain', fx = pick === 'mix' ? FX[i % FX.length] : pick, fit = v.fit || S.picFit || 'blur', u = `${rawUrl(v.file)}?v=${v.v || 0}`;
+    if (v.type === 'web') { out.push({ sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
     out.push(v.type === 'image'
       ? { sec: v.sec || S.imageSec || 8, html: `<div class="fx fx-${fx} fit-${fit}">${(fit === 'blur' || fit === 'cover') ? `<img class="bg" src="${u}" alt="">` : ''}<img class="vid" src="${u}" alt="">${fx === 'curtain' ? '<i class="cur l"></i><i class="cur r"></i>' : ''}</div>` }
       : { video: true, sec: 45, html: `<video class="vid vfit-${fit === 'blur' ? 'contain' : fit}" playsinline preload="auto" src="${u}"></video>` });
@@ -1282,7 +1284,7 @@ async function runInter(force) {
     els[i].classList.add('on'); prev = els[i];
     const vd = slides[i].video && els[i].querySelector('video');
     if (vd) { const wake = () => interWake && interWake(); vd.onended = wake; vd.onerror = wake; vd.currentTime = 0; vd.play().catch(() => { vd.muted = true; vd.play().catch(wake); }); }
-    await interSleep(clamp(slides[i].sec, 3, 60) * 1000);
+    await interSleep(clamp(slides[i].sec, 3, slides[i].html.indexOf('webslide') > -1 ? 600 : 60) * 1000);
     if (vd) vd.pause();
   }
   if (!interAbort && !OFFICE) {
