@@ -842,7 +842,7 @@ const PR = date => S.prayers.map(p => Object.assign({}, p, { time: ptime(p, date
 /* ================= stage rendering ================= */
 let pages = [], pageIdx = 0, pageTimer = null, imgUrl = null;
 const subjName = c => S.subjects[c] || c || '';
-const teachName = c => { const f = S.teachers[c]; if (!f) return c || ''; const w = f.replace(/\./g,' ').split(/\s+/).filter(x => x && !/^(m|muhammad|mohammad|muhammed)$/i.test(x)); return w.length ? 'Sir ' + w[0] : f; };
+const teachName = c => { const f = S.teachers[c]; if (!f) return c || ''; if (/^dr\b/i.test(f.trim())) { const d = f.replace(/^dr\.?\s*/i, '').split(/\s+/)[0]; return d ? 'Dr. ' + d : f; } const words = n => String(n).replace(/\./g,' ').split(/\s+/).filter(x => x && !/^(m|muhammad|mohammad|muhammed|sir)$/i.test(x)); const w = words(f); if (!w.length) return f; const dup = Object.keys(S.teachers).some(k => k !== c && !/^dr\b/i.test(String(S.teachers[k]).trim()) && (words(S.teachers[k])[0] || '').toLowerCase() === w[0].toLowerCase()); return 'Sir ' + (dup && w[1] ? (/^(ul|ud|al|bin)$/i.test(w[1]) && w[2] ? w.slice(0, 3).join(' ') : w[0] + ' ' + w[1]) : w[0]); };
 
 function buildPages() {
   const groups = [];
