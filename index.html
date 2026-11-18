@@ -272,6 +272,36 @@ body.started #start{display:none}
 .card.act.now{outline:.5vh solid #ffd400;outline-offset:.1vh}
 .card.act.past{animation:none;opacity:.38;box-shadow:none;will-change:auto}
 .webslide{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+
+/* ===== study-tip avatar: rises from behind the red bar into the header, never over the timetable ===== */
+header.top{position:relative;z-index:1}.banner{position:relative;z-index:3}
+#avWrap{position:absolute;top:0;width:12vh;overflow:hidden;z-index:2;pointer-events:none;display:none}
+body.tv #avWrap{display:block}
+#av{position:absolute;left:0;bottom:-1vh;width:12vh;height:16vh;-webkit-transform:translateY(110%);transform:translateY(110%)}
+#av.in{-webkit-animation:avUp .9s cubic-bezier(.3,1.5,.5,1) both;animation:avUp .9s cubic-bezier(.3,1.5,.5,1) both}
+#av.out{-webkit-animation:avDown .6s ease-in both;animation:avDown .6s ease-in both}
+@keyframes avUp{0%{transform:translateY(110%)}60%{transform:translateY(-6%)}100%{transform:translateY(0)}}
+@-webkit-keyframes avUp{0%{-webkit-transform:translateY(110%)}60%{-webkit-transform:translateY(-6%)}100%{-webkit-transform:translateY(0)}}
+@keyframes avDown{0%{transform:translateY(0)}25%{transform:translateY(-5%)}100%{transform:translateY(110%)}}
+@-webkit-keyframes avDown{0%{-webkit-transform:translateY(0)}25%{-webkit-transform:translateY(-5%)}100%{-webkit-transform:translateY(110%)}}
+#av svg{width:100%;height:100%;overflow:visible}
+#av .lid{transform-box:fill-box;-webkit-transform-origin:50% 0;transform-origin:50% 0;-webkit-transform:scaleY(0);transform:scaleY(0);-webkit-animation:avBlink 4s infinite;animation:avBlink 4s infinite}
+@keyframes avBlink{0%,93%,100%{transform:scaleY(0)}96%{transform:scaleY(1)}}
+@-webkit-keyframes avBlink{0%,93%,100%{-webkit-transform:scaleY(0)}96%{-webkit-transform:scaleY(1)}}
+#av .arm{transform-box:fill-box;-webkit-transform-origin:15% 95%;transform-origin:15% 95%;-webkit-transform:rotate(60deg);transform:rotate(60deg)}
+#av.wave .arm{-webkit-animation:avWave .4s ease-in-out 6 alternate;animation:avWave .4s ease-in-out 6 alternate}
+@keyframes avWave{from{transform:rotate(-8deg)}to{transform:rotate(18deg)}}
+@-webkit-keyframes avWave{from{-webkit-transform:rotate(-8deg)}to{-webkit-transform:rotate(18deg)}}
+#avBurst{position:absolute;z-index:4;pointer-events:none;width:0;height:0}
+#avBurst i{position:absolute;left:0;top:0;width:1.1vh;height:1.1vh;background:#F2B705;opacity:0;-webkit-transform:rotate(45deg);transform:rotate(45deg)}
+#avBurst.go i{-webkit-animation:avStar .9s ease-out both;animation:avStar .9s ease-out both}
+@keyframes avStar{0%{opacity:1;transform:translate(0,0) rotate(45deg) scale(.4)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(45deg) scale(1.2)}}
+@-webkit-keyframes avStar{0%{opacity:1;-webkit-transform:translate(0,0) rotate(45deg) scale(.4)}100%{opacity:0;-webkit-transform:translate(var(--x),var(--y)) rotate(45deg) scale(1.2)}}
+#avTip{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:1.4vw;padding:0 2.2vw;background:inherit;
+  font:600 2.5vh var(--display);letter-spacing:.02em;white-space:nowrap;overflow:hidden;opacity:0;-webkit-transform:translateY(40%);transform:translateY(40%);-webkit-transition:opacity .4s,-webkit-transform .4s;transition:opacity .4s,transform .4s}
+#avTip.on{opacity:1;-webkit-transform:none;transform:none}
+#avTip b{flex:none;background:#F2B705;color:#4A0710;padding:.5vh 1.1vh;border-radius:.8vh;font-size:1.9vh;letter-spacing:.14em}
+/* ===== end avatar ===== */
 </style>
 </head>
 <body>
@@ -282,10 +312,24 @@ body.started #start{display:none}
     <div class="ttl"><h1 id="title"></h1></div>
     <div class="clk"><div id="clock"></div><div id="date"></div></div>
   </header>
+  <div id="avWrap"><div id="av"><svg viewBox="0 0 240 320"><g>
+<path d="M40 320c0-56 32-96 80-96s80 40 80 96z" fill="#13315C"/><path d="M100 226l20 32 20-32z" fill="#fff"/><path d="M114 242h12l-2 46h-8z" fill="#C3304A"/>
+<g class="arm"><path d="M58 250c-14-18-20-40-16-62" stroke="#13315C" stroke-width="26" stroke-linecap="round" fill="none"/><circle cx="42" cy="180" r="15" fill="#EDB98C"/><path d="M34 168v-10M41 165v-12M48 166v-10" stroke="#EDB98C" stroke-width="6" stroke-linecap="round"/></g>
+<rect x="104" y="198" width="32" height="32" rx="10" fill="#E3A87C"/>
+<ellipse cx="56" cy="144" rx="10" ry="16" fill="#E3A87C"/><ellipse cx="184" cy="144" rx="10" ry="16" fill="#E3A87C"/><ellipse cx="120" cy="140" rx="64" ry="70" fill="#EDB98C"/>
+<path d="M58 118c2-40 30-60 62-60s60 20 62 60c-10-14-20-20-34-22q-28 14-60 2c-14 4-22 10-30 20z" fill="#2B1B14"/>
+<path d="M64 96c4-30 28-46 56-46s52 16 56 46q-56-18-112 0z" fill="#FFFDF7" stroke="#B9B9B9" stroke-width="2.5"/>
+<ellipse cx="96" cy="146" rx="9" ry="11" fill="#2A0A10"/><ellipse cx="144" cy="146" rx="9" ry="11" fill="#2A0A10"/><circle cx="99" cy="142" r="3.5" fill="#fff"/><circle cx="147" cy="142" r="3.5" fill="#fff"/>
+<ellipse class="lid" cx="96" cy="146" rx="11" ry="13" fill="#EDB98C"/><ellipse class="lid" cx="144" cy="146" rx="11" ry="13" fill="#EDB98C"/>
+<path d="M84 126q12-6 24 0M132 126q12-6 24 0" fill="none" stroke="#2B1B14" stroke-width="4" stroke-linecap="round"/>
+<path d="M104 174q16 14 32 0" fill="none" stroke="#8E1426" stroke-width="4" stroke-linecap="round"/>
+<ellipse cx="82" cy="166" rx="9" ry="5" fill="#E07A6A" opacity=".35"/><ellipse cx="158" cy="166" rx="9" ry="5" fill="#E07A6A" opacity=".35"/>
+</g></svg></div></div><div id="avBurst"></div>
   <div class="banner">
     <span id="dayLabel"></span>
     <span id="next"></span>
     <span><span id="pager"></span> &nbsp; <span id="audioChip" class="off"></span></span>
+    <div id="avTip"><b>STUDY TIP</b><span id="avTxt"></span></div>
   </div>
   <main id="main"><div id="planWarn"></div>
     <div id="tableWrap"></div>
@@ -1254,7 +1298,7 @@ function buildSlides() {
   const FX = ['curtain', 'zoom', 'zoomout', 'slide', 'left', 'up', 'down', 'wipe', 'flip', 'fade'];
   if (S.videoOn) (S.videos || []).filter(v => v.on).forEach((v, i) => {
     const pick = v.fx || S.slideFx || 'curtain', fx = pick === 'mix' ? FX[i % FX.length] : pick, fit = v.fit || S.picFit || 'blur', u = `${rawUrl(v.file)}?v=${v.v || 0}`;
-    if (v.type === 'web') { out.push({ web: true, sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
+    if (v.type === 'web') { out.push({ web: true, sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?once=1&r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
     out.push(v.type === 'image'
       ? { sec: v.sec || S.imageSec || 8, html: `<div class="fx fx-${fx} fit-${fit}">${(fit === 'blur' || fit === 'cover') ? `<img class="bg" src="${u}" alt="">` : ''}<img class="vid" src="${u}" alt="">${fx === 'curtain' ? '<i class="cur l"></i><i class="cur r"></i>' : ''}</div>` }
       : { video: true, sec: 45, html: `<video class="vid vfit-${fit === 'blur' ? 'contain' : fit}" playsinline preload="auto" src="${u}"></video>` });
@@ -1264,6 +1308,7 @@ function buildSlides() {
     out.push({ html: `<div class="slbrand brand">${brand}</div><div class="nt"><div class="ntt">${esc(n.title)}</div><div class="ntb">${esc(n.text)}</div></div>`, sec: S.interNoticeSec }));
   return out;
 }
+addEventListener('message', e => { if (e && e.data === 'slidesDone' && interWake) setTimeout(() => { if (interWake) interWake(); }, 900); });
 function abortInter() {
   if (!interRunning) return;
   interAbort = true; if (interWake) interWake(); $$('#inter video').forEach(v => v.pause());
@@ -1947,6 +1992,29 @@ else {
   checkVersion(); setInterval(checkVersion, 300000);
 }
 renderLogo(); renderImage(); requestWake();
+
+/* ================= study-tip avatar ================= */
+const AV_TIPS = ['Revise a little every day. It helps you remember much more.', 'Test yourself instead of just re-reading. Close the book and recall.', 'Teach a friend what you learned today. Explaining makes it stick.', 'Study for 25 minutes, then take a 5-minute break.', 'Sleep well before a test. Your brain stores what you learned while you sleep.', 'Start with your hardest subject while your mind is fresh.', 'Keep your phone in another room while you study.', 'Make short notes in your own words.', 'Practise past papers with a timer, just like the real exam.', 'Not sure about something? Ask your teacher.', 'Small steps every day beat studying all night before the exam.', 'Drink water and keep your desk tidy. A clear space helps a clear mind.', 'Revise today\u2019s lesson tonight, even for 10 minutes.', 'Mistakes in tests show you exactly what to revise next.'];
+let avK = Math.floor(Math.random() * AV_TIPS.length), avBusy = false;
+function avBlocked() { return ADMIN || OFFICE || interRunning || !!ann || busy || document.body.classList.contains('intervis') || $('#inter').classList.contains('show'); }
+function avPlace() {
+  const w = $('#avWrap'), bn = $('.banner').getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), tt = $('#title').getBoundingClientRect(), ck = $('.clk').getBoundingClientRect(), aw = w.offsetWidth;
+  let x = (tt.right + ck.left) / 2 - aw / 2; if (ck.left - tt.right < aw + 10) x = ck.left - aw - 8;
+  w.style.left = (x - st.left) + 'px'; w.style.height = (bn.top - st.top + bn.height * 0.5) + 'px';
+  const b = $('#avBurst'); b.style.left = (x - st.left + aw / 2) + 'px'; b.style.top = (bn.top - st.top - aw * 0.55) + 'px';
+}
+function avShow() {
+  if (avBusy || avBlocked()) return; avBusy = true;
+  try { avPlace(); } catch (e) { avBusy = false; return; }
+  const av = $('#av'), tip = $('#avTip'), burst = $('#avBurst');
+  burst.innerHTML = [[-6,-5],[6,-5],[-8,1],[8,1],[0,-8],[-4,-8],[4,-8]].map(p => `<i style="--x:${p[0]}vh;--y:${p[1]}vh"></i>`).join('');
+  av.classList.remove('out'); av.classList.add('in');
+  setTimeout(() => { burst.classList.add('go'); av.classList.add('wave'); }, 500);
+  setTimeout(() => { $('#avTxt').textContent = AV_TIPS[avK++ % AV_TIPS.length]; tip.classList.add('on'); }, 1200);
+  let t = 0; const done = () => { tip.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { av.classList.remove('out'); avBusy = false; }, 700); };
+  (function watch() { t += 500; if (avBlocked() || t >= 10000) { done(); return; } setTimeout(watch, 500); })();
+}
+if (!ADMIN) setTimeout(function avLoop() { try { avShow(); } catch (e) {} setTimeout(avLoop, 6 * 60 * 1000); }, 90 * 1000);
 let lastTickOk = Date.now(); const bootAt = Date.now();
 tick(); setInterval(() => { tick(); lastTickOk = Date.now(); }, 1000); scheduleInter();
 if (!ADMIN) {

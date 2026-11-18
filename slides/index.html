@@ -342,6 +342,6 @@ function go(n){
   if(prev){prev.classList.remove('on'); setTimeout(function(){prev.classList.remove('show');},850);}
   cur=n;
 }
-var started=false;function start(){if(started)return;started=true;go(0);setInterval(function(){go((cur+1)%slides.length);},DUR);}
+var ONCE=/[?&]once/.test(location.search),started=false;function start(){if(started)return;started=true;go(0);var iv=setInterval(function(){if(ONCE&&cur===slides.length-1){clearInterval(iv);try{parent.postMessage('slidesDone','*');}catch(e){}return;}go((cur+1)%slides.length);},DUR);}
 if(document.readyState==='complete')start();else{addEventListener('load',start);setTimeout(start,6000);}
 </script></body></html>
