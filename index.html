@@ -312,6 +312,7 @@ body.tv #avWrap{display:block}
 #avBubble.on{opacity:1;-webkit-transform:none;transform:none}
 #avBubble b{flex:none;background:#F2B705;color:#4A0710;padding:.5vh 1vh;border-radius:.8vh;font-size:1.7vh;letter-spacing:.14em}
 #avBubble:after{content:"";position:absolute;right:-2vh;top:50%;margin-top:-1.1vh;border:1.1vh solid transparent;border-left:1.6vh solid #C3304A}
+body.avslide #avWrap{position:fixed;z-index:30}body.avslide #avBurst,body.avslide #avPortal,body.avslide #avBubble{position:fixed;z-index:31}
 body:not(.tv) #avBubble,body:not(.tv) #avPortal,body:not(.tv) #avBurst{display:none}
 /* ===== end avatar ===== */
 </style>
@@ -2011,8 +2012,23 @@ renderLogo(); renderImage(); requestWake();
 /* ================= study-tip avatar ================= */
 const AV_TIPS = ["Start your study with Bismillah and a clear goal for the session.", "Read the chapter before class. You will understand the lecture much better.", "Write down one thing you learned in every class today.", "Cover your notes and explain the topic out loud. Then check what you missed.", "Mix your practice: solve different types of questions in one sitting.", "Review new topics after 1 day, 1 week and 1 month to lock them in.", "Learn formulas by using them in questions, not just by reading them.", "Draw diagrams and flowcharts. Pictures are easier to remember.", "Study in the same quiet spot every day. Your brain gets into focus faster.", "Set a small target, like 10 MCQs, and finish it before taking a break.", "Stuck on a question for 10 minutes? Mark it and move on, then come back.", "Read every exam question twice before you start writing.", "In MCQs, cross out the options you know are wrong first.", "Leave 10 minutes at the end of every paper to check your answers.", "Keep a mistakes notebook and read it before every test.", "Use your free periods to revise, not to scroll.", "Come to class on time. The first 5 minutes often explain the whole topic.", "Sit near the front. You will focus better and remember more.", "Help a classmate with a topic. Teaching is the best revision.", "Pack your bag the night before so the morning is stress-free.", "Eat a proper breakfast. Your brain needs fuel to focus.", "Take a short walk or stretch between study sessions.", "Get 7 to 8 hours of sleep. Tired minds forget faster.", "Respect your teachers and your classmates. Good manners open doors.", "Plan your week on paper: which subject, which day, which time.", "Big syllabus? Break it into small parts and tick them off one by one.", "Compare yourself with who you were yesterday, not with others.", "Confused in class? Write your question down and ask after the lecture.", "Revise numericals by solving them again, not by reading the solution.", "Consistency beats intensity. One hour every day beats seven hours once."];
 let avK = Math.floor(Math.random() * AV_TIPS.length), avBusy = false;
-function avBlocked() { return ADMIN || OFFICE || interRunning || !!ann || busy || document.body.classList.contains('intervis') || $('#inter').classList.contains('show'); }
+function avMode() { // 'tt' = timetable, 'slide' = IOTA slides/notices, 'block' = Sunnah slides or a slide change in progress
+  if (!$('#inter').classList.contains('show')) return 'tt';
+  const on = $('#interBody .slide.on'); if (!on) return 'block';
+  const f = on.querySelector('iframe'); if (f && /sunnah/.test(f.dataset.src || f.getAttribute('src') || '')) return 'block';
+  return 'slide';
+}
+function avBlocked() { return ADMIN || !!ann || busy || avMode() === 'block'; }
 function avPlace() {
+  if (document.body.classList.contains('avslide')) {
+    const W = innerWidth, H = innerHeight, w = $('#avWrap'), aw = w.offsetWidth, x = W - aw - W * 0.15, barTop = H - H * 0.035, ah = H * 0.17;
+    w.style.left = x + 'px'; w.style.top = (barTop - ah) + 'px'; w.style.height = (ah + H * 0.01) + 'px';
+    const b = $('#avBurst'); b.style.left = (x + aw / 2) + 'px'; b.style.top = (barTop - ah + aw * 0.1) + 'px';
+    const p = $('#avPortal'); p.style.left = (x + aw / 2) + 'px'; p.style.top = barTop + 'px';
+    const bb = $('#avBubble'); bb.style.right = (W - x + 14) + 'px'; bb.style.top = (barTop - ah * 0.55) + 'px'; bb.style.marginTop = '-' + (bb.offsetHeight / 2 || 30) + 'px';
+    return;
+  }
+  $('#avWrap').style.top = '0';
   const w = $('#avWrap'), bn = $('.banner').getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), tt = $('#title').getBoundingClientRect(), ck = $('.clk').getBoundingClientRect(), hd = $('header.top').getBoundingClientRect(), aw = w.offsetWidth;
   let x = (tt.right + ck.left) / 2 - aw / 2; if (ck.left - tt.right < aw + 10) x = ck.left - aw - 8;
   const cx = x - st.left + aw / 2, barTop = bn.top - st.top;
@@ -2023,6 +2039,7 @@ function avPlace() {
 }
 function avShow() {
   if (avBusy || avBlocked()) return; avBusy = true;
+  const mode0 = avMode(); document.body.classList.toggle('avslide', mode0 === 'slide');
   const av = $('#av'), bub = $('#avBubble'), burst = $('#avBurst'), portal = $('#avPortal');
   $('#avTxt').textContent = AV_TIPS[avK++ % AV_TIPS.length];
   try { avPlace(); } catch (e) { avBusy = false; return; }
@@ -2031,8 +2048,8 @@ function avShow() {
   setTimeout(() => { av.classList.remove('out'); av.classList.add('in'); }, 700);   // 2. he springs out of it
   setTimeout(() => { burst.classList.add('go'); av.classList.add('wave'); }, 1200);  // 3. star burst + wave
   setTimeout(() => { try { avPlace(); } catch (e) {} bub.classList.add('on'); }, 1700); // 4. speech bubble with the tip
-  let t = 0; const done = () => { bub.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { portal.classList.remove('open'); portal.classList.add('close'); }, 450); setTimeout(() => { av.classList.remove('out'); portal.classList.remove('close'); avBusy = false; }, 1300); };
-  (function watch() { t += 500; if (avBlocked() || t >= 11000) { done(); return; } setTimeout(watch, 500); })();
+  let t = 0; const done = () => { bub.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { portal.classList.remove('open'); portal.classList.add('close'); }, 450); setTimeout(() => { av.classList.remove('out'); portal.classList.remove('close'); document.body.classList.remove('avslide'); avBusy = false; }, 1300); };
+  (function watch() { t += 500; if (avBlocked() || avMode() !== mode0 || t >= 11000) { done(); return; } setTimeout(watch, 500); })();
 }
 if (!ADMIN) setTimeout(function avLoop() { let shown = false; try { if (!avBusy && !avBlocked()) { avShow(); shown = avBusy; } } catch (e) {} setTimeout(avLoop, shown ? 2 * 60 * 1000 : 15 * 1000); }, 60 * 1000);
 let lastTickOk = Date.now(); const bootAt = Date.now();
