@@ -1,7 +1,7 @@
 /* IOTA signage offline cache: always tries the internet first, and only uses the saved copy
    when the internet is down (e.g. after a power cut), so the TV never shows a browser error page. */
 const C = 'iota-signage-v1';
-self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(['./', 'logo.png', 'logo-big.png', 'slides/']).catch(() => {}))); });
+self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(['./', 'logo.png', 'logo-big.png', 'slides/', 'sunnah/']).catch(() => {}))); });
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
