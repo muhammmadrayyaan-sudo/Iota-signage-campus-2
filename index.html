@@ -89,6 +89,7 @@ table.tt{width:100%;border-collapse:collapse;font:600 calc(2.45vh * var(--scale)
 .pill.test{background:#fde2e2;color:#a30404}
 .pill.recovery{background:#dff3e2;color:#1c6a2b}
 .empty{padding:6vh;font-size:4vh;color:#777;text-align:center}
+.empty.bye{padding:7vh 4vh;color:#2A0A10}.bye1{font:700 7vh/1.1 var(--display);color:var(--red)}.bye2{margin-top:2.2vh;font-size:4.2vh;font-weight:600}.bye3{margin-top:1.4vh;font-size:3.2vh;color:#666}
 
 /* ---------- room grid (one screen) ---------- */
 #gridWrap{display:none;margin:.9vh 1.6vw;height:calc(100% - 1.8vh);background:#fff;border-radius:1.2vh;box-shadow:0 .4vh 1.6vh rgba(120,20,30,.14);overflow:hidden}
@@ -982,7 +983,7 @@ function renderGrid() {
   let nCls = items.slice(cut).filter(it => it.kind !== 'break').length, from = cut;
   while (from > 0 && nCls < 4) { from--; if (items[from].kind !== 'break') nCls++; }
   const vis = cut >= items.length ? [] : items.slice(from);
-  if (!vis.length) { box.innerHTML = '<div class="empty">All classes for today are over.</div>'; return; }
+  if (!vis.length) { box.innerHTML = '<div class="empty bye"><div class="bye1">Assalamu Alaikum</div><div class="bye2">Classes are over for today.</div><div class="bye3">Have a safe journey home. See you tomorrow, In shaa Allah!</div></div>'; return; }
   const rowsTpl = 'auto auto ' + vis.map(it => it.kind === 'break' ? 'auto' : 'minmax(0,1fr)').join(' ');
   let h = `<div class="g" style="grid-template-columns:10vw repeat(${rooms.length},minmax(0,1fr));grid-template-rows:${rowsTpl}">`;
   h += '<div class="gh gcorner" style="grid-row:1 / span 2;grid-column:1">Time</div>';
