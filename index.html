@@ -297,10 +297,21 @@ body.tv #avWrap{display:block}
 #avBurst.go i{-webkit-animation:avStar .9s ease-out both;animation:avStar .9s ease-out both}
 @keyframes avStar{0%{opacity:1;transform:translate(0,0) rotate(45deg) scale(.4)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(45deg) scale(1.2)}}
 @-webkit-keyframes avStar{0%{opacity:1;-webkit-transform:translate(0,0) rotate(45deg) scale(.4)}100%{opacity:0;-webkit-transform:translate(var(--x),var(--y)) rotate(45deg) scale(1.2)}}
-#avTip{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:1.4vw;padding:0 2.2vw;background:inherit;
-  font:600 2.5vh var(--display);letter-spacing:.02em;white-space:nowrap;overflow:hidden;opacity:0;-webkit-transform:translateY(40%);transform:translateY(40%);-webkit-transition:opacity .4s,-webkit-transform .4s;transition:opacity .4s,transform .4s}
-#avTip.on{opacity:1;-webkit-transform:none;transform:none}
-#avTip b{flex:none;background:#F2B705;color:#4A0710;padding:.5vh 1.1vh;border-radius:.8vh;font-size:1.9vh;letter-spacing:.14em}
+#avPortal{position:absolute;z-index:4;width:16vh;height:3.2vh;margin-left:-8vh;margin-top:-1.6vh;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse,#FFF6C8 0%,#F2B705 45%,rgba(242,183,5,0) 72%);box-shadow:0 0 3vh 1vh rgba(242,183,5,.55);opacity:0;-webkit-transform:scaleX(0);transform:scaleX(0)}
+#avPortal.open{-webkit-animation:avPortal 2.6s ease-out both;animation:avPortal 2.6s ease-out both}
+#avPortal.close{-webkit-animation:avPortalC .7s ease-in both;animation:avPortalC .7s ease-in both}
+@keyframes avPortal{0%{opacity:0;transform:scaleX(0)}25%{opacity:1;transform:scaleX(1.15)}40%{transform:scaleX(1)}100%{opacity:.55;transform:scaleX(1)}}
+@-webkit-keyframes avPortal{0%{opacity:0;-webkit-transform:scaleX(0)}25%{opacity:1;-webkit-transform:scaleX(1.15)}40%{-webkit-transform:scaleX(1)}100%{opacity:.55;-webkit-transform:scaleX(1)}}
+@keyframes avPortalC{0%{opacity:.8;transform:scaleX(1)}100%{opacity:0;transform:scaleX(0)}}
+@-webkit-keyframes avPortalC{0%{opacity:.8;-webkit-transform:scaleX(1)}100%{opacity:0;-webkit-transform:scaleX(0)}}
+#avBubble{position:absolute;z-index:5;max-width:44vw;padding:1.3vh 2.2vh;border-radius:2.2vh;background:#fff;border:.4vh solid #C3304A;box-shadow:0 1vh 3vh rgba(0,0,0,.22);
+  color:#2A0A10;font:600 2.6vh/1.25 var(--display);display:flex;align-items:center;gap:1.4vh;pointer-events:none;
+  opacity:0;-webkit-transform:scale(.4);transform:scale(.4);-webkit-transform-origin:100% 50%;transform-origin:100% 50%;-webkit-transition:opacity .3s,-webkit-transform .45s cubic-bezier(.3,1.6,.5,1);transition:opacity .3s,transform .45s cubic-bezier(.3,1.6,.5,1)}
+#avBubble.on{opacity:1;-webkit-transform:none;transform:none}
+#avBubble b{flex:none;background:#F2B705;color:#4A0710;padding:.5vh 1vh;border-radius:.8vh;font-size:1.7vh;letter-spacing:.14em}
+#avBubble:after{content:"";position:absolute;right:-2vh;top:50%;margin-top:-1.1vh;border:1.1vh solid transparent;border-left:1.6vh solid #C3304A}
+body:not(.tv) #avBubble,body:not(.tv) #avPortal,body:not(.tv) #avBurst{display:none}
 /* ===== end avatar ===== */
 </style>
 </head>
@@ -324,12 +335,11 @@ body.tv #avWrap{display:block}
 <path d="M84 126q12-6 24 0M132 126q12-6 24 0" fill="none" stroke="#2B1B14" stroke-width="4" stroke-linecap="round"/>
 <path d="M104 174q16 14 32 0" fill="none" stroke="#8E1426" stroke-width="4" stroke-linecap="round"/>
 <ellipse cx="82" cy="166" rx="9" ry="5" fill="#E07A6A" opacity=".35"/><ellipse cx="158" cy="166" rx="9" ry="5" fill="#E07A6A" opacity=".35"/>
-</g></svg></div></div><div id="avBurst"></div>
+</g></svg></div></div><div id="avBurst"></div><div id="avPortal"></div><div id="avBubble"><b>STUDY TIP</b><span id="avTxt"></span></div>
   <div class="banner">
     <span id="dayLabel"></span>
     <span id="next"></span>
     <span><span id="pager"></span> &nbsp; <span id="audioChip" class="off"></span></span>
-    <div id="avTip"><b>STUDY TIP</b><span id="avTxt"></span></div>
   </div>
   <main id="main"><div id="planWarn"></div>
     <div id="tableWrap"></div>
@@ -1998,21 +2008,26 @@ const AV_TIPS = ['Revise a little every day. It helps you remember much more.', 
 let avK = Math.floor(Math.random() * AV_TIPS.length), avBusy = false;
 function avBlocked() { return ADMIN || OFFICE || interRunning || !!ann || busy || document.body.classList.contains('intervis') || $('#inter').classList.contains('show'); }
 function avPlace() {
-  const w = $('#avWrap'), bn = $('.banner').getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), tt = $('#title').getBoundingClientRect(), ck = $('.clk').getBoundingClientRect(), aw = w.offsetWidth;
+  const w = $('#avWrap'), bn = $('.banner').getBoundingClientRect(), st = $('#stage').getBoundingClientRect(), tt = $('#title').getBoundingClientRect(), ck = $('.clk').getBoundingClientRect(), hd = $('header.top').getBoundingClientRect(), aw = w.offsetWidth;
   let x = (tt.right + ck.left) / 2 - aw / 2; if (ck.left - tt.right < aw + 10) x = ck.left - aw - 8;
-  w.style.left = (x - st.left) + 'px'; w.style.height = (bn.top - st.top + bn.height * 0.5) + 'px';
-  const b = $('#avBurst'); b.style.left = (x - st.left + aw / 2) + 'px'; b.style.top = (bn.top - st.top - aw * 0.55) + 'px';
+  const cx = x - st.left + aw / 2, barTop = bn.top - st.top;
+  w.style.left = (x - st.left) + 'px'; w.style.height = (barTop + bn.height * 0.5) + 'px';
+  const b = $('#avBurst'); b.style.left = cx + 'px'; b.style.top = (barTop - aw * 0.55) + 'px';
+  const p = $('#avPortal'); p.style.left = cx + 'px'; p.style.top = barTop + 'px';
+  const bb = $('#avBubble'); bb.style.right = (st.right - x + 14) + 'px'; bb.style.top = (hd.top - st.top + hd.height / 2) + 'px'; bb.style.marginTop = '-' + (bb.offsetHeight / 2 || 30) + 'px';
 }
 function avShow() {
   if (avBusy || avBlocked()) return; avBusy = true;
+  const av = $('#av'), bub = $('#avBubble'), burst = $('#avBurst'), portal = $('#avPortal');
+  $('#avTxt').textContent = AV_TIPS[avK++ % AV_TIPS.length];
   try { avPlace(); } catch (e) { avBusy = false; return; }
-  const av = $('#av'), tip = $('#avTip'), burst = $('#avBurst');
-  burst.innerHTML = [[-6,-5],[6,-5],[-8,1],[8,1],[0,-8],[-4,-8],[4,-8]].map(p => `<i style="--x:${p[0]}vh;--y:${p[1]}vh"></i>`).join('');
-  av.classList.remove('out'); av.classList.add('in');
-  setTimeout(() => { burst.classList.add('go'); av.classList.add('wave'); }, 500);
-  setTimeout(() => { $('#avTxt').textContent = AV_TIPS[avK++ % AV_TIPS.length]; tip.classList.add('on'); }, 1200);
-  let t = 0; const done = () => { tip.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { av.classList.remove('out'); avBusy = false; }, 700); };
-  (function watch() { t += 500; if (avBlocked() || t >= 10000) { done(); return; } setTimeout(watch, 500); })();
+  burst.innerHTML = [[-6,-5],[6,-5],[-8,1],[8,1],[0,-8],[-4,-8],[4,-8],[-9,-3],[9,-3]].map(p => `<i style="--x:${p[0]}vh;--y:${p[1]}vh"></i>`).join('');
+  portal.classList.remove('close'); portal.classList.add('open');              // 1. gold portal opens on the red bar
+  setTimeout(() => { av.classList.remove('out'); av.classList.add('in'); }, 700);   // 2. he springs out of it
+  setTimeout(() => { burst.classList.add('go'); av.classList.add('wave'); }, 1200);  // 3. star burst + wave
+  setTimeout(() => { try { avPlace(); } catch (e) {} bub.classList.add('on'); }, 1700); // 4. speech bubble with the tip
+  let t = 0; const done = () => { bub.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { portal.classList.remove('open'); portal.classList.add('close'); }, 450); setTimeout(() => { av.classList.remove('out'); portal.classList.remove('close'); avBusy = false; }, 1300); };
+  (function watch() { t += 500; if (avBlocked() || t >= 11000) { done(); return; } setTimeout(watch, 500); })();
 }
 if (!ADMIN) setTimeout(function avLoop() { try { avShow(); } catch (e) {} setTimeout(avLoop, 6 * 60 * 1000); }, 90 * 1000);
 let lastTickOk = Date.now(); const bootAt = Date.now();
