@@ -541,7 +541,21 @@ const IS_OFFICE_SITE = OFFICE_WORDS.some(w => location.hostname.indexOf(w) > -1)
 const SYNC = { owner: 'muhammmadrayyaan-sudo', repo: IS_CAMPUS2 ? 'Iota-signage-campus-2' : IS_OFFICE_SITE ? 'iota-signage-office' : 'iota-signage', branch: 'data', file: 'signage-data.json' };
 const SLIDES_ONLY = IS_OFFICE_SITE;
 if (!window.structuredClone) window.structuredClone = o => JSON.parse(JSON.stringify(o));
-window.addEventListener('error', e => { let b = document.getElementById('err'); if (!b) { b = document.createElement('div'); b.id = 'err'; b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:999;background:#900;color:#fff;font:2.2vh monospace;padding:6px'; document.body.appendChild(b); } b.textContent = 'Error: ' + e.message + ' (line ' + e.lineno + ')'; });
+window.__isAdmin = /[?&]admin\b/.test(location.search);
+window.__safeReload = function (why) { /* reload only if the site is reachable and we have not just reloaded (prevents loops and blank error pages) */
+  try { const last = +localStorage.getItem('iwReloadAt') || 0; if (Date.now() - last < 10 * 60 * 1000) return; } catch (e) {}
+  fetch(location.pathname + '?ping=' + Date.now(), { method: 'HEAD', cache: 'no-store' }).then(r => { if (!r.ok) return; try { localStorage.setItem('iwReloadAt', Date.now()); localStorage.setItem('iwReloadWhy', why + ' @ ' + new Date().toLocaleString()); } catch (e) {} location.reload(); }).catch(() => {});
+};
+(function () { let errs = [];
+  window.addEventListener('error', e => {
+    if (!e || !e.message) return; // a picture/sound that failed to load is not a page error
+    console.error('Signage error:', e.message, e.lineno);
+    if (window.__isAdmin) { let b = document.getElementById('err'); if (!b) { b = document.createElement('div'); b.id = 'err'; b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:999;background:#900;color:#fff;font:2.2vh monospace;padding:6px'; b.onclick = () => b.remove(); document.body.appendChild(b); } b.textContent = 'Error: ' + e.message + ' (line ' + e.lineno + ') – click to hide'; return; }
+    const now = Date.now(); errs = errs.filter(t => now - t < 5 * 60 * 1000); errs.push(now);
+    if (errs.length >= 3) window.__safeReload('repeated errors');
+  });
+  window.addEventListener('unhandledrejection', e => { console.warn('Signage promise error:', e && e.reason); if (e && e.preventDefault) e.preventDefault(); });
+})();
 (() => {
 'use strict';
 
@@ -609,7 +623,7 @@ const DEFAULTS = {
 
 const ADMIN = /[?&]admin\b/.test(location.search);
 let OFFICE = false;
-const calcOffice = () => { OFFICE = IS_OFFICE_SITE && !ADMIN && S.officeMode === 'slides'; };
+const calcOffice = () => { OFFICE = IS_OFFICE_SITE && !ADMIN && (S.officeMode === 'slides' || (IS_CAMPUS2 && !pvDate && !((S.plans || {})[dateStr(new Date())]))); };
 let S;
 function load() {
   let s = {};
@@ -1240,7 +1254,7 @@ function buildSlides() {
   const FX = ['curtain', 'zoom', 'zoomout', 'slide', 'left', 'up', 'down', 'wipe', 'flip', 'fade'];
   if (S.videoOn) (S.videos || []).filter(v => v.on).forEach((v, i) => {
     const pick = v.fx || S.slideFx || 'curtain', fx = pick === 'mix' ? FX[i % FX.length] : pick, fit = v.fit || S.picFit || 'blur', u = `${rawUrl(v.file)}?v=${v.v || 0}`;
-    if (v.type === 'web') { out.push({ sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
+    if (v.type === 'web') { out.push({ web: true, sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
     out.push(v.type === 'image'
       ? { sec: v.sec || S.imageSec || 8, html: `<div class="fx fx-${fx} fit-${fit}">${(fit === 'blur' || fit === 'cover') ? `<img class="bg" src="${u}" alt="">` : ''}<img class="vid" src="${u}" alt="">${fx === 'curtain' ? '<i class="cur l"></i><i class="cur r"></i>' : ''}</div>` }
       : { video: true, sec: 45, html: `<video class="vid vfit-${fit === 'blur' ? 'contain' : fit}" playsinline preload="auto" src="${u}"></video>` });
@@ -1283,9 +1297,15 @@ async function runInter(force) {
     if (prev) prev.classList.remove('on');
     els[i].classList.add('on'); prev = els[i];
     const vd = slides[i].video && els[i].querySelector('video');
+    if (slides[i].web) { /* animated slides page: if it has not loaded within 12 s (no internet), skip it instead of showing a blank screen */
+      const fr = els[i].querySelector('iframe'); let okWeb = false;
+      for (let w = 0; w < 24 && !interAbort; w++) { try { const d = fr.contentDocument; if (d && d.querySelector('.slide.on')) { okWeb = true; break; } } catch (e) {} await interSleep(500); }
+      if (!okWeb) { console.warn('Animated slides did not load, skipped'); try { fr.src = 'about:blank'; } catch (e) {} continue; }
+    }
     if (vd) { const wake = () => interWake && interWake(); vd.onended = wake; vd.onerror = wake; vd.currentTime = 0; vd.play().catch(() => { vd.muted = true; vd.play().catch(wake); }); }
     await interSleep(clamp(slides[i].sec, 3, slides[i].html.indexOf('webslide') > -1 ? 600 : 60) * 1000);
     if (vd) vd.pause();
+    if (slides[i].web) { const fr = els[i].querySelector('iframe'); if (fr) setTimeout(() => { try { fr.src = 'about:blank'; } catch (e) {} }, 900); }
   }
   if (!interAbort && !OFFICE) {
     els.forEach(e => e.classList.remove('on'));
@@ -1352,7 +1372,7 @@ function tick() {
   $('#clock').textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   $('#date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   tickOverlayClock(); updateNext(now); updateChip(); checkEvents(now);
-  if (dateStr(now) !== dayKey) { dayKey = dateStr(now); renderStage(); renderPlans(); }
+  if (dateStr(now) !== dayKey) { dayKey = dateStr(now); const was = OFFICE; calcOffice(); renderStage(); renderPlans(); if (OFFICE !== was) { abortInter(); scheduleInter(); } }
   if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderPrayerStrip(now); if (S.mode === 'table') showPage(false); else if (S.mode === 'grid') renderGrid(); }
 }
 
@@ -1927,7 +1947,18 @@ else {
   checkVersion(); setInterval(checkVersion, 300000);
 }
 renderLogo(); renderImage(); requestWake();
-tick(); setInterval(tick, 1000); scheduleInter();
+let lastTickOk = Date.now(); const bootAt = Date.now();
+tick(); setInterval(() => { tick(); lastTickOk = Date.now(); }, 1000); scheduleInter();
+if (!ADMIN) {
+  setInterval(() => {
+    const n = new Date(), up = Date.now() - bootAt;
+    if (Date.now() - lastTickOk > 90000) window.__safeReload('clock stopped'); // the page froze or keeps failing
+    else if (n.getHours() === 3 && up > 3600000 && !ann && !busy) window.__safeReload('nightly refresh'); // clears TV browser memory every night
+    else if (up > 8 * 3600000 && !ann && !busy && !IS_CAMPUS2_PRAYER_SOON()) window.__safeReload('8-hour refresh');
+  }, 30000);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+function IS_CAMPUS2_PRAYER_SOON() { try { const n = new Date(), m = n.getHours() * 60 + n.getMinutes(); return PR(n).some(p => [p.time, p.jam].some(t => { const x = String(t || '').match(/(\d+):(\d+)/); if (!x) return false; const d = (+x[1]) * 60 + (+x[2]) - m; return d >= -5 && d <= 15; })); } catch (e) { return false; } }
 if (ADMIN) toast(hadSaved ? 'Welcome back. Click “Enable audio” once so announcements can play.' : 'Demo loaded with sample data. Click “Enable audio”, then open Settings to set prayer times.');
 })();
 </script>
