@@ -1303,13 +1303,15 @@ function logoSlideHtml() {
   if (customLogo && (bigUrl || logoUrl)) return `<img class="biglogo" src="${bigUrl || logoUrl}" alt="IOTA World">`;
   return `<img class="biglogo" src="${LOGO_H}" alt="IOTA World">`;
 }
+let webTurn = 0;
 function buildSlides() {
   const out = [];
+  const webs = (S.videos || []).filter(v => v.on && v.type === 'web'), pickWeb = (!OFFICE && webs.length > 1) ? webs[webTurn++ % webs.length].id : null;
   if (S.interLogo) out.push({ html: logoSlideHtml(), sec: S.interLogoSec });
   const FX = ['curtain', 'zoom', 'zoomout', 'slide', 'left', 'up', 'down', 'wipe', 'flip', 'fade'];
   if (S.videoOn) (S.videos || []).filter(v => v.on).forEach((v, i) => {
     const pick = v.fx || S.slideFx || 'curtain', fx = pick === 'mix' ? FX[i % FX.length] : pick, fit = v.fit || S.picFit || 'blur', u = `${rawUrl(v.file)}?v=${v.v || 0}`;
-    if (v.type === 'web') { out.push({ web: true, sec: v.sec || 80, html: `<iframe class="webslide" src="${v.file}?once=1&r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
+    if (v.type === 'web') { if (pickWeb && v.id !== pickWeb) return; out.push({ web: true, sec: v.sec || 80, html: `<iframe class="webslide" data-src="${v.file}?once=1&r=${Date.now()}" scrolling="no" allow="autoplay"></iframe>` }); return; }
     out.push(v.type === 'image'
       ? { sec: v.sec || S.imageSec || 8, html: `<div class="fx fx-${fx} fit-${fit}">${(fit === 'blur' || fit === 'cover') ? `<img class="bg" src="${u}" alt="">` : ''}<img class="vid" src="${u}" alt="">${fx === 'curtain' ? '<i class="cur l"></i><i class="cur r"></i>' : ''}</div>` }
       : { video: true, sec: 45, html: `<video class="vid vfit-${fit === 'blur' ? 'contain' : fit}" playsinline preload="auto" src="${u}"></video>` });
@@ -1319,7 +1321,8 @@ function buildSlides() {
     out.push({ html: `<div class="slbrand brand">${brand}</div><div class="nt"><div class="ntt">${esc(n.title)}</div><div class="ntb">${esc(n.text)}</div></div>`, sec: S.interNoticeSec }));
   return out;
 }
-addEventListener('message', e => { if (e && e.data === 'slidesDone' && interWake) setTimeout(() => { if (interWake) interWake(); }, 900); });
+let activeWeb = null;
+addEventListener('message', e => { if (e && e.data === 'slidesDone' && activeWeb && e.source === activeWeb && interWake) { activeWeb = null; setTimeout(() => { if (interWake) interWake(); }, 900); } });
 function abortInter() {
   if (!interRunning) return;
   interAbort = true; if (interWake) interWake(); $$('#inter video').forEach(v => v.pause());
@@ -1355,13 +1358,14 @@ async function runInter(force) {
     const vd = slides[i].video && els[i].querySelector('video');
     if (slides[i].web) { /* animated slides page: if it has not loaded within 12 s (no internet), skip it instead of showing a blank screen */
       const fr = els[i].querySelector('iframe'); let okWeb = false;
+      if (fr && !fr.getAttribute('src')) fr.src = fr.dataset.src; activeWeb = fr ? fr.contentWindow : null; // load only when it is on screen
       for (let w = 0; w < 24 && !interAbort; w++) { try { const d = fr.contentDocument; if (d && d.querySelector('.slide.on')) { okWeb = true; break; } } catch (e) {} await interSleep(500); }
       if (!okWeb) { console.warn('Animated slides did not load, skipped'); try { fr.src = 'about:blank'; } catch (e) {} continue; }
     }
     if (vd) { const wake = () => interWake && interWake(); vd.onended = wake; vd.onerror = wake; vd.currentTime = 0; vd.play().catch(() => { vd.muted = true; vd.play().catch(wake); }); }
     await interSleep(clamp(slides[i].sec, 3, slides[i].html.indexOf('webslide') > -1 ? 600 : 60) * 1000);
     if (vd) vd.pause();
-    if (slides[i].web) { const fr = els[i].querySelector('iframe'); if (fr) setTimeout(() => { try { fr.src = 'about:blank'; } catch (e) {} }, 900); }
+    if (slides[i].web) { activeWeb = null; const fr = els[i].querySelector('iframe'); if (fr) setTimeout(() => { try { fr.src = 'about:blank'; } catch (e) {} }, 900); }
   }
   if (!interAbort && !OFFICE) {
     els.forEach(e => e.classList.remove('on'));
@@ -2030,7 +2034,7 @@ function avShow() {
   let t = 0; const done = () => { bub.classList.remove('on'); av.classList.remove('in', 'wave'); av.classList.add('out'); burst.classList.remove('go'); setTimeout(() => { portal.classList.remove('open'); portal.classList.add('close'); }, 450); setTimeout(() => { av.classList.remove('out'); portal.classList.remove('close'); avBusy = false; }, 1300); };
   (function watch() { t += 500; if (avBlocked() || t >= 11000) { done(); return; } setTimeout(watch, 500); })();
 }
-if (!ADMIN) setTimeout(function avLoop() { try { avShow(); } catch (e) {} setTimeout(avLoop, 2 * 60 * 1000); }, 60 * 1000);
+if (!ADMIN) setTimeout(function avLoop() { let shown = false; try { if (!avBusy && !avBlocked()) { avShow(); shown = avBusy; } } catch (e) {} setTimeout(avLoop, shown ? 2 * 60 * 1000 : 15 * 1000); }, 60 * 1000);
 let lastTickOk = Date.now(); const bootAt = Date.now();
 tick(); setInterval(() => { tick(); lastTickOk = Date.now(); }, 1000); scheduleInter();
 if (!ADMIN) {
