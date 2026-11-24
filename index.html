@@ -87,6 +87,10 @@ table.tt{width:100%;border-collapse:collapse;font:600 calc(2.45vh * var(--scale)
 .pill{display:inline-block;font:800 .6em var(--body);padding:.15em .75em;border-radius:2em;margin-left:.7em;vertical-align:middle;background:#eee;color:#444;letter-spacing:.04em;text-transform:uppercase}
 .pill.extra{background:#efe3fa;color:#5a2a86}
 .pill.test{background:#fde2e2;color:#a30404}
+.pill.moved{background:#ff8a00;color:#fff;font-weight:900;letter-spacing:.04em;white-space:nowrap}.pill.moved i{font-style:normal;margin-left:.4em}
+.card.moved{box-shadow:0 0 0 .35vh #ff8a00 inset;animation:movedGlow 2.2s ease-in-out infinite}.card.moved.past{animation:none}
+@keyframes movedGlow{0%,100%{box-shadow:0 0 0 .35vh #ff8a00 inset}50%{box-shadow:0 0 0 .35vh #ff8a00 inset,0 0 2vh .4vh rgba(255,138,0,.75)}}
+.mvNote{display:inline-block;background:#ff8a00;color:#fff;font-weight:900;padding:0 .6em;border-radius:.4em;margin-right:.4em;letter-spacing:.05em}
 .pill.recovery{background:#dff3e2;color:#1c6a2b}
 .empty{padding:6vh;font-size:4vh;color:#777;text-align:center}
 .empty.bye{padding:7vh 4vh;color:#2A0A10}.bye1{font:700 7vh/1.1 var(--display);color:var(--red)}.bye2{margin-top:2.2vh;font-size:4.2vh;font-weight:600}.bye3{margin-top:1.4vh;font-size:3.2vh;color:#666}
@@ -948,11 +952,15 @@ function buildItems() {
   });
   return items.sort((a, b) => a.start - b.start);
 }
+/* Room change: write it in the row's note, e.g. "from R3", "moved from R3", "room change R3" -> card shows R3 → R5 */
+const ROOM_RX = /(?:room\s*change[d]?|moved|shifted|from)\s*(?:from\s*)?(?:room\s*)?(R\s*\d+)/i;
+const roomFrom = r => { const m = (r.note || '').match(ROOM_RX); if (!m) return ''; const f = m[1].replace(/\s+/g, '').toUpperCase(); return f !== String(r.room || '').toUpperCase() ? f : ''; };
 function cardHtml(r, slotTime, nowM, rgOver) {
   const i = info(r), n = (r.note || '').trim(), nl = n.toLowerCase(), tst = nl.includes('test'), ext = nl.includes('extra'), prc = nl.includes('practice'), at = (n + ' ' + subjName(r.subj) + ' ' + (r.subj || '')).toLowerCase(), ak = /test|exam|quiz/.test(at) ? 'test' : /practice/.test(at) ? 'practice' : /counsel/.test(at) ? 'counsel' : /extra/.test(at) ? 'extra' : /recovery/.test(at) ? 'recovery' : /activit|seminar|workshop/.test(at) ? 'activity' : '';
   const rg = rgOver || rangeOf(r.time), st = rg ? (nowM >= rg[1] ? ' past' : (nowM >= rg[0] ? ' now' : '')) : '';
   const own = (r.time || '').trim() !== slotTime ? `<span class="own">${esc(fmtRange(r.time))}</span>` : '';
-  const pill = n ? `<span class="pill ${tst ? 'test' : ext ? 'extra' : prc ? 'practice' : nl === 'recovery' ? 'recovery' : ''}">${esc(n)}</span>` : '';
+  const rf = roomFrom(r), n2 = rf ? n.replace(ROOM_RX, '').replace(/^[\s,;·\-–—|]+|[\s,;·\-–—|]+$/g, '') : n;
+  const pill = n2 && !rf ? `<span class="pill ${tst ? 'test' : ext ? 'extra' : prc ? 'practice' : nl === 'recovery' ? 'recovery' : ''}">${esc(n2)}</span>` : (rf ? `<span class="pill moved">ROOM CHANGE <i>${esc(rf)} → ${esc(String(r.room).toUpperCase())}</i></span>${n2 ? ` <span class="pill">${esc(n2)}</span>` : ''}` : '');
   const th = teachName(r.teacher);
   let tpill = '';
   if (ak === 'test') {
@@ -961,8 +969,8 @@ function cardHtml(r, slotTime, nowM, rgOver) {
     const sub = !tr ? '' : (nowM >= tr[0] && nowM < tr[1]) ? 'NOW' : (nowM < tr[0] && tr[0] - nowM <= 60) ? 'IN ' + (tr[0] - nowM) + ' MIN' : '';
     tpill = `<span class="pill test tbig">${esc(lab)}${sub ? `<i>${sub}</i>` : tm ? ' ' + esc(tm[0].replace(/\s+/g, '')) : ''}</span>`;
   }
-  return `<div class="card${st}${tst ? ' tst' : ''}${ak ? ' act act-' + ak : ''}" style="--c:${i.color};--on:${inkOn(i.color)};--tint:${i.color}26;--tint2:${i.color}59">` +
-    `<div class="cs"><b>${esc(i.cls)}</b><span>${esc(r.sec)}</span>${own}</div><div class="cj">${esc(subjName(r.subj).replace(/^Mathematics$/, 'Maths'))}${th ? ' - ' + esc(th) : ''}</div>` +
+  return `<div class="card${st}${tst ? ' tst' : ''}${ak ? ' act act-' + ak : ''}${rf && !ak ? ' moved' : ''}" style="--c:${i.color};--on:${inkOn(i.color)};--tint:${i.color}26;--tint2:${i.color}59">` +
+    `<div class="cs"><b>${esc(i.cls)}</b><span>${esc(r.sec)}</span>${own}</div><div class="cj">${esc(subjName(r.subj).replace(/^Mathematics$/, 'Math'))}${th ? ' - ' + esc(th) : ''}</div>` +
     ((tpill || pill) ? `<div class="cth">${tpill || pill}</div>` : '') + `</div>`;
 }
 function renderGrid() {
@@ -1048,7 +1056,9 @@ function renderStage() {
   $('#title').textContent = S.title;
   const pl = PLAN(); { const w = $('#planWarn'); w.style.display = (planStale || !pl) ? 'block' : 'none'; w.textContent = pl ? '⚠ TODAY’S PLAN NOT UPDATED – showing ' + (pl.dayLabel || planKey) : '⚠ NO PLAN UPLOADED FOR TODAY'; } $('#dayLabel').textContent = (pl && pl.dayLabel) || (pl && planStale ? planKey : pl ? new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'}).toUpperCase().replace(/,/g,' |') : S.dayLabel);
   const n = planStale ? '' : ((pl && pl.footerNote != null) ? pl.footerNote : (S.footerNote || '')).trim();
-  $('#footNote').innerHTML = n ? `<b>Note:</b> ${esc(n)}` : '';
+  const mv = planStale || !pl ? [] : (pl.rows || []).filter(r => r.kind !== 'break' && roomFrom(r)).map(r => `${esc(info(r).cls)} ${esc(r.sec)}: ${esc(roomFrom(r))} → <b>${esc(String(r.room).toUpperCase())}</b>`);
+  const mvTxt = [...new Set(mv)].join(' · ');
+  $('#footNote').innerHTML = (mvTxt ? `<span class="mvNote">ROOM CHANGE</span> ${mvTxt}${n ? ' &nbsp;|&nbsp; ' : ''}` : '') + (n ? `<b>Note:</b> ${esc(n)}` : '');
   $('#legend').innerHTML = legendItems().map(g => `<span class="lg" style="--c:${g.color}"><i></i>${esc(g.label)}</span>`).join('');
   renderPrayerStrip();
   const photo = pl && pl.image && !(pl.rows && pl.rows.length);
