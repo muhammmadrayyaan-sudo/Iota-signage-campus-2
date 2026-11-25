@@ -1034,7 +1034,7 @@ function renderGrid() {
     rooms.forEach((rm, ci) => {
       if (taken[i][ci]) return;
       const rs = it.cells[rm.toUpperCase()];
-      h += `<div class="gc" style="grid-row:${row};grid-column:${ci + 2}">${rs ? rs.map(r => cardHtml(r, it.time, nowM)).join('') : ''}</div>`;
+      h += `<div class="gc${rs && rs.length > 1 ? ' multi' : ''}" style="grid-row:${row};grid-column:${ci + 2}">${rs ? rs.map(r => cardHtml(r, it.time, nowM)).join('') : ''}</div>`;
     });
   });
   spans.forEach(sp => {
@@ -1044,11 +1044,13 @@ function renderGrid() {
   /* Text grows with the free space (fewer classes left = bigger text), then steps down only if something would be cut off */
   const nRows = vis.filter(it => it.kind !== 'break').length;
   let fit = Math.max(1, Math.min(1.35, 7 / Math.max(nRows, 1)));
-  const over = () => [].some.call(box.querySelectorAll('.card'), c => c.scrollHeight > c.clientHeight + 1 || c.scrollWidth > c.clientWidth + 2)
-    || [].some.call(box.querySelectorAll('.card .cj'), e => e.getBoundingClientRect().height > parseFloat(getComputedStyle(e).fontSize) * 2.5) // max 2 lines per class name
+  /* a cell holding 2+ classes gets its own smaller text, so one crowded cell never shrinks the whole screen */
+  const over = () => [].some.call(box.querySelectorAll('.gc:not(.multi) .card'), c => c.scrollHeight > c.clientHeight + 1 || c.scrollWidth > c.clientWidth + 2)
+    || [].some.call(box.querySelectorAll('.gc:not(.multi) .card .cj'), e => e.getBoundingClientRect().height > parseFloat(getComputedStyle(e).fontSize) * 2.5) // max 2 lines per class name
     || [].some.call(box.querySelectorAll('.gt'), e => e.scrollWidth > e.clientWidth + 1);
   box.style.setProperty('--fit', fit.toFixed(2));
   for (let k = 0; k < 14 && fit > 0.75 && over(); k++) { fit -= 0.05; box.style.setProperty('--fit', fit.toFixed(2)); }
+  [].forEach.call(box.querySelectorAll('.gc.multi'), g => { let f = 0.85; g.style.setProperty('--fit', (fit * f).toFixed(2)); const ov = () => g.scrollHeight > g.clientHeight + 1 || [].some.call(g.querySelectorAll('.card'), c => c.scrollHeight > c.clientHeight + 1); for (let k = 0; k < 10 && f > 0.45 && ov(); k++) { f -= 0.05; g.style.setProperty('--fit', (fit * f).toFixed(2)); } });
 }
 function renderStage() {
   buildSecMap();
