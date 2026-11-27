@@ -62,7 +62,7 @@
   "SM": "Syed Mehmood"
  },
  "classColors": {},
- "ver": 19,
+ "ver": 20,
  "groups": [
   {
    "id": "xiig",
@@ -804,7 +804,7 @@
    "name": "IOTA animated slides",
    "file": "slides/",
    "on": true,
-   "sec": 15,
+   "sec": 40,
    "v": 1
   },
   {
